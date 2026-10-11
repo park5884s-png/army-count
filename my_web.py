@@ -1,6 +1,7 @@
 from datetime import datetime
 import streamlit as st
 import time
+from zoneinfo import ZoneInfo  # 한국 시간대(KST) 설정을 위한 라이브러리
 
 # ---------------------------------------------------------
 # 페이지 설정 (와이드 모드)
@@ -125,13 +126,18 @@ friends = [
 
 
 # ---------------------------------------------------------
-# 전역율 및 D-day 계산 함수 (47,347,200초 기준)
+# 한국 시간(KST) 기준 전역율 및 D-day 계산 함수
 # ---------------------------------------------------------
 def calculate_status(enlistment_str, discharge_str):
   fmt = "%Y-%m-%d"
-  enlistment = datetime.strptime(enlistment_str, fmt)
-  discharge = datetime.strptime(discharge_str, fmt)
-  now = datetime.now()
+  kst = ZoneInfo("Asia/Seoul")
+
+  # 입대일과 전역일에 한국 시간대 적용 (자정 기준)
+  enlistment = datetime.strptime(enlistment_str, fmt).replace(tzinfo=kst)
+  discharge = datetime.strptime(discharge_str, fmt).replace(tzinfo=kst)
+
+  # 현재 시각을 확실하게 한국 시간(KST)으로 가져옴
+  now = datetime.now(kst)
 
   total_seconds = 47347200.0  # 548일 기준 고정 (47,347,200초 = 100%)
   elapsed_seconds = (now - enlistment).total_seconds()
@@ -159,7 +165,7 @@ def calculate_status(enlistment_str, discharge_str):
 # ---------------------------------------------------------
 # 웹 UI 구성
 # ---------------------------------------------------------
-st.title("🪖 친구들 실시간 군 복무 전역율 대시보드")
+st.title("🪖 친구들 실시간 군 복무 전역율 대시보드 (KST)")
 st.markdown("---")
 
 placeholder = st.empty()
@@ -167,8 +173,11 @@ placeholder = st.empty()
 try:
   while True:
     with placeholder.container():
-      now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-      st.caption(f"🕒 현재 시간: {now_str} (1초마다 자동 갱신 중)")
+      kst = ZoneInfo("Asia/Seoul")
+      now_str = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
+      st.caption(
+          f"🕒 현재 기준 시간 (KST): {now_str} (1초마다 자동 갱신 중)"
+      )
 
       table_data = []
       for friend in friends:
